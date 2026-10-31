@@ -1,45 +1,23 @@
-name: Lint and Test
+name: ARM duration check
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
+    branches: [arm-duration-check]
 
 jobs:
-  pre-commit:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+  test:
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pre-commit/action@v3.0.1
-
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install runtime dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pytest
-
+          python-version: "3.13"
       - name: Build and install
         run: |
-          python -m pip install build
+          python -m pip install --upgrade pip pytest build
           python -m build
           pip install dist/*.whl
-
-      - name: Run tests
-        run: |
-          pytest tests
+      - name: Show platform
+        run: python -c "import platform, numpy as np; print(platform.machine(), np.__version__); print(np.array([np.inf, -np.inf, np.nan]).astype('timedelta64[ms]'))"
+      - name: Run duration tests without the fix
+        run: pytest tests/test_duration.py -v
